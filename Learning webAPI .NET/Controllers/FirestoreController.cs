@@ -19,25 +19,27 @@ namespace Learning_webAPI_.NET.Controllers
             this.db = db;
         }
 
-        // GET: api/<DummyController>
+        // GET: api/<FirestoreController>
         [HttpGet]
-        public async Task<IEnumerable<string>> Get()
+        public async Task<IActionResult> Get()
         {
             // Query the dummy collection and return the email, username, and date register fields
             QuerySnapshot snapshot = await db.Collection("dummy").GetSnapshotAsync();
 
-            List<string> values = new List<string>();
+            List<Users> values = new List<Users>();
             foreach (DocumentSnapshot document in snapshot.Documents)
             {
                 string email = document.GetValue<string>("email");
                 string username = document.GetValue<string>("username");
                 DateTime dateRegister = document.GetValue<DateTime>("date_register");
 
-                values.Add($"{email} {username} {dateRegister.ToString()}");
+                values.Add(new Users(dateRegister,email,username));
             }
 
-            return values;
+            return new JsonResult(values);
         }
+
+
 
         // GET api/<DummyController>/5
         [HttpGet("{id}")]
