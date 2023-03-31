@@ -26,14 +26,19 @@ namespace Learning_webAPI_.NET.Controllers
             // Query the dummy collection and return the email, username, and date register fields
             QuerySnapshot snapshot = await db.Collection("dummy").GetSnapshotAsync();
 
-            List<Users> values = new List<Users>();
+            List<object> values = new List<object>();
             foreach (DocumentSnapshot document in snapshot.Documents)
             {
                 string email = document.GetValue<string>("email");
                 string username = document.GetValue<string>("username");
                 DateTime dateRegister = document.GetValue<DateTime>("date_register");
 
-                values.Add(new Users(dateRegister,email,username));
+                values.Add(new
+                {
+                    email = email,
+                    username = username,
+                    date_register = dateRegister.ToString()
+                });
             }
 
             return new JsonResult(values);
@@ -41,33 +46,37 @@ namespace Learning_webAPI_.NET.Controllers
 
 
 
-        // GET api/<DummyController>/5
-        [HttpGet("{id}")]
-        public async Task<string> Get(int id)
+        // GET api/<DummyController>/shuusan
+        [HttpGet("{nameOrEmail}")]
+        public async Task<IActionResult> Get(string nameOrEmail)
         {
-            DocumentReference docRef = db.Collection("dummy").Document(id.ToString());
-            DocumentSnapshot snapshot = await docRef.GetSnapshotAsync();
+            // Query the dummy collection and filter by name and/or email
+            Query query = db.Collection("dummy");
+            List<Users> values = new List<Users>();
 
-            string email = snapshot.GetValue<string>("email");
-            string username = snapshot.GetValue<string>("username");
-            DateTime dateRegister = snapshot.GetValue<DateTime>("date_register");
+            values.AddRange(await getByUsernameEmailQuery(query.WhereEqualTo("username", nameOrEmail)));
+            values.AddRange(await getByUsernameEmailQuery(query.WhereEqualTo("email", nameOrEmail)));
 
-            return $"{email} {username} {dateRegister.ToString()}";
+            return new JsonResult(values);
         }
 
-        // POST api/<DummyController>
-        [HttpPost]
-        public async Task Post([FromBody] Users dummy)
+        private async Task<List<Users>> getByUsernameEmailQuery(Query query)
         {
-            DocumentReference docRef = db.Collection("dummy").Document();
-            Dictionary<string, object> data = new Dictionary<string, object>
+            List<Users> returnValues = new List<Users>();
+
+            QuerySnapshot snapshot = await query.GetSnapshotAsync();
+            foreach (DocumentSnapshot document in snapshot.Documents)
             {
-                {"email", dummy.Email ?? "null"},
-                {"username", dummy.Username ?? "null"},
-                {"date_register", dummy.DateRegister}
-            };
-            await docRef.SetAsync(data);
+                string email = document.GetValue<string>("email");
+                string username = document.GetValue<string>("username");
+                DateTime dateRegister = document.GetValue<DateTime>("date_register");
+
+                returnValues.Add(new Users(dateRegister, email, username));
+            }
+
+            return returnValues;
         }
+
 
         // PUT api/<DummyController>/5
         [HttpPut("{id}")]
